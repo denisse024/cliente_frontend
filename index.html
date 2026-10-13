@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestión de Productos</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <style>
+        :root {
+            --fondo: #f5f3f8;
+            --superficie: #ffffff;
+            --tinta: #2b2433;
+            --tinta-suave: #6d6479;
+            --linea: #e4dfea;
+            --frambuesa: #b8326f;
+            --frambuesa-oscuro: #8f2456;
+            --frambuesa-claro: #fbe8f1;
+            --ciruela: #4a2f63;
+            --peligro: #c0392b;
+            --peligro-claro: #fdecea;
+            --exito: #1f7a55;
+            --radio: 14px;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            background: var(--fondo);
+            color: var(--tinta);
+            font-family: "Figtree", system-ui, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+        }
+
+        main {
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 40px 20px 80px;
+        }
+
+        header { margin-bottom: 28px; }
+
+        h1 {
+            margin: 0 0 4px;
+            font-family: "Bricolage Grotesque", system-ui, sans-serif;
+            font-size: clamp(2rem, 5vw, 2.8rem);
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            color: var(--ciruela);
+        }
+
+        header p { margin: 0; color: var(--tinta-suave); }
+
+        h2 {
+            margin: 0 0 16px;
+            font-family: "Bricolage Grotesque", system-ui, sans-serif;
+            font-size: 1.3rem;
+            font-weight: 500;
+        }
+
+        .panel {
+            background: var(--superficie);
+            border: 1px solid var(--linea);
+            border-radius: var(--radio);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .panel.editando {
+            border-color: var(--frambuesa);
+            box-shadow: 0 0 0 3px var(--frambuesa-claro);
+        }
+
+        /* Formulario */
+        .campos {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1.5fr;
+            gap: 16px;
+        }
+
+        .campo label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="search"] {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid var(--linea);
+            border-radius: 10px;
+            background: #fff;
+            color: var(--tinta);
+            font: inherit;
+        }
+
+        input:focus-visible,
+        button:focus-visible {
+            outline: 3px solid var(--frambuesa);
+            outline-offset: 2px;
+        }
+
+        .acciones-form {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        /* Botones */
+        button {
+            font: inherit;
+            font-weight: 600;
+            padding: 10px 18px;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: background-color 0.15s, border-color 0.15s;
+        }
+
+        .btn-primario { background: var(--frambuesa); color: #fff; }
+        .btn-primario:hover { background: var(--frambuesa-oscuro); }
+
+        .btn-secundario {
+            background: transparent;
+            color: var(--tinta);
+            border-color: var(--linea);
+        }
+        .btn-secundario:hover { background: var(--fondo); }
+
+        .btn-editar {
+            background: var(--frambuesa-claro);
+            color: var(--frambuesa-oscuro);
+            padding: 7px 14px;
+        }
+        .btn-editar:hover { background: #f6d3e4; }
+
+        .btn-eliminar {
+            background: var(--peligro-claro);
+            color: var(--peligro);
+            padding: 7px 14px;
+        }
+        .btn-eliminar:hover { background: #f9d6d2; }
+
+        .btn-peligro { background: var(--peligro); color: #fff; }
+        .btn-peligro:hover { background: #a22f23; }
+
+        /* Barra de la lista */
+        .barra-lista {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .barra-lista h2 { margin: 0; margin-right: auto; }
+        .barra-lista input[type="search"] { width: 240px; }
+
+        .resumen {
+            margin: 0 0 14px;
+            color: var(--tinta-suave);
+            font-size: 0.92rem;
+        }
+
+        /* Tabla */
+        .tabla-contenedor { overflow-x: auto; }
+
+        table { width: 100%; border-collapse: collapse; }
+
+        th, td {
+            padding: 12px 14px;
+            text-align: left;
+            border-bottom: 1px solid var(--linea);
+        }
+
+        th {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--tinta-suave);
+            background: var(--fondo);
+        }
+
+        th:first-child { border-top-left-radius: 10px; }
+        th:last-child { border-top-right-radius: 10px; }
+
+        td.precio, th.precio { text-align: right; font-variant-numeric: tabular-nums; }
+        td.id { color: var(--tinta-suave); width: 60px; }
+        td.acciones { white-space: nowrap; display: flex; gap: 8px; }
+
+        .categoria {
+            display: inline-block;
+            padding: 2px 10px;
+            border-radius: 999px;
+            background: #ece5f4;
+            color: var(--ciruela);
+            font-size: 0.88rem;
+        }
+
+        tbody tr:hover { background: #faf8fc; }
+        tr.resaltada { background: var(--frambuesa-claro) !important; }
+
+        .vacio {
+            padding: 32px 12px;
+            text-align: center;
+            color: var(--tinta-suave);
+        }
+
+
+        /* Gráfica */
+        .encabezado-grafica {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .encabezado-grafica h2 { margin: 0; margin-right: auto; }
+
+        select {
+            padding: 10px 12px;
+            border: 1px solid var(--linea);
+            border-radius: 10px;
+            background: #fff;
+            color: var(--tinta);
+            font: inherit;
+        }
+        select:focus-visible { outline: 3px solid var(--frambuesa); outline-offset: 2px; }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+            clip: rect(0 0 0 0);
+            white-space: nowrap;
+        }
+
+        .lienzo {
+            position: relative;
+            height: 340px;
+        }
+
+        /* Diálogo de confirmación */
+        dialog {
+            border: none;
+            border-radius: var(--radio);
+            padding: 28px;
+            max-width: 420px;
+            width: calc(100% - 40px);
+            color: var(--tinta);
+            box-shadow: 0 20px 50px rgba(43, 36, 51, 0.25);
+        }
+
+        dialog::backdrop { background: rgba(43, 36, 51, 0.45); }
+        dialog h3 { margin: 0 0 8px; font-family: "Bricolage Grotesque", system-ui, sans-serif; font-size: 1.25rem; }
+        dialog p { margin: 0 0 20px; color: var(--tinta-suave); }
+        .acciones-dialogo { display: flex; justify-content: flex-end; gap: 10px; }
+
+        /* Avisos */
+        #avisos {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            display: grid;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .aviso {
+            padding: 12px 18px;
+            border-radius: 10px;
+            background: var(--tinta);
+            color: #fff;
+            font-weight: 500;
+            box-shadow: 0 8px 24px rgba(43, 36, 51, 0.25);
+        }
+        .aviso.exito { background: var(--exito); }
+        .aviso.error { background: var(--peligro); }
+
+        @media (max-width: 720px) {
+            .campos { grid-template-columns: 1fr; }
+            .barra-lista input[type="search"] { width: 100%; }
+            td.acciones { flex-direction: column; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; }
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <header>
+            <h1>Gestión de Productos</h1>
+            <p>Agrega, edita y elimina los productos de tu inventario.</p>
+        </header>
+
+        <section class="panel" id="panelFormulario">
+            <h2 id="tituloFormulario">Agregar producto</h2>
+
+            <form id="formProducto" novalidate>
+                <div class="campos">
+                    <div class="campo">
+                        <label for="nombre">Nombre</label>
+                        <input type="text" id="nombre" autocomplete="off" required>
+                    </div>
+                    <div class="campo">
+                        <label for="precio">Precio (MXN)</label>
+                        <input type="number" id="precio" step="0.01" min="0" required>
+                    </div>
+                    <div class="campo">
+                        <label for="categoria">Categoría</label>
+                        <input type="text" id="categoria" autocomplete="off" required>
+                    </div>
+                </div>
+
+                <div class="acciones-form">
+                    <button type="submit" class="btn-primario" id="btnGuardar">Agregar producto</button>
+                    <button type="button" class="btn-secundario" id="btnCancelar" hidden>Cancelar edición</button>
+                </div>
+            </form>
+        </section>
+
+        <section class="panel">
+            <div class="barra-lista">
+                <h2>Lista de productos</h2>
+                <input type="search" id="buscador" placeholder="Buscar por nombre o categoría" aria-label="Buscar productos">
+                <button id="btnCargar" class="btn-secundario">Actualizar lista</button>
+            </div>
+
+            <p class="resumen" id="resumen"></p>
+
+            <div class="tabla-contenedor" id="tabla-datos">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nombre</th>
+                            <th class="precio">Precio</th>
+                            <th>Categoría</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listaProductos"></tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="panel">
+            <div class="encabezado-grafica">
+                <h2>Precios por producto</h2>
+                <label for="tipoGrafica" class="sr-only">Tipo de gráfica</label>
+                <select id="tipoGrafica">
+                    <option value="bar">Barras</option>
+                    <option value="pie">Circular</option>
+                </select>
+            </div>
+            <div class="lienzo">
+                <canvas id="miGrafica" aria-label="Gráfica de precios por producto" role="img"></canvas>
+            </div>
+            <p class="resumen" id="mensajeGrafica"></p>
+        </section>
+    </main>
+
+    <dialog id="dialogoEliminar">
+        <h3>¿Eliminar este producto?</h3>
+        <p id="textoEliminar"></p>
+        <div class="acciones-dialogo">
+            <button type="button" class="btn-secundario" id="btnNoEliminar">Cancelar</button>
+            <button type="button" class="btn-peligro" id="btnSiEliminar">Eliminar producto</button>
+        </div>
+    </dialog>
+
+    <div id="avisos" role="status" aria-live="polite"></div>
+
+    <script src="app.js"></script>
+</body>
+</html>
